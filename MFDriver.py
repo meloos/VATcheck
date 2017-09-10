@@ -18,20 +18,24 @@ class MFDriver():
         # open website
         self.driver.get(self.url)
 
-        # find input & fill
-        inputfield = self.driver.find_element_by_id(self.input_id)
-        inputfield.send_keys("",value)
+        try:
+            # find input & fill
+            inputfield = self.driver.find_element_by_id(self.input_id)
+            inputfield.send_keys("",value)
 
-        # find button, click & wait
-        self.driver.find_element_by_id(self.button_id).click()
-        time.sleep(4)
+            # find button, click & wait
+            self.driver.find_element_by_id(self.button_id).click()
+            time.sleep(4)
+            return True
+        except:
+            return False
 
     def message(self):
         # try to read message with vat status or die with "READ ERROR"
         try:
             result = self.driver.find_element_by_id(self.message_id).text.splitlines()[0]
         except:
-            result = "READ ERROR"
+            result = False
 
         return result
 
