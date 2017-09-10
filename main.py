@@ -1,84 +1,66 @@
-import time
+from MFDriver import MFDriver
+from Validator import Validator
+
 from datetime import datetime
 import csv
-import contextlib
-from selenium import webdriver
-from PIL import Image
 
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
+# initialize webdriver and validator
+mf = MFDriver()
+v = Validator()
 
-# check NIP validity
-def validateNIP(nip):
-    if nip == "":
-        return False
+nip_dict = {}
 
-    if len(nip) != 10:
-        return False
+nip_csv_in = "nip_list.csv"
+nip_csv_out = "nip_result.csv"
 
-    if not is_number(nip):
-        return False
+# get nips from csv into dictionary
+with open(nip_csv_in, 'rb') as csvfile:
+     reader = csv.reader(csvfile, delimiter=';', quotechar='|')
+     for row in reader:
+         nip_dict[row[0]] = {}
 
-    checksum = 6 * int(nip[0]) + 5 * int(nip[1]) + 7 * int(nip[2]) + 2 * int(nip[3]) + 3 * int(nip[4]) + 4 * int(nip[5]) + 5 * int(nip[6]) + 6 * int(nip[7]) + 7 * int(nip[8])
-    checksum = checksum % 11
+# check nips
+for nip, data in nip_dict.iteritems():
+    print nip
 
-    if int(nip[9]) != checksum:
-        return False
+    # if nip is valid
+    if v.validate(nip):
+        # check nip
+        mf.check(nip)
 
-    return True
+        # get timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        timestamp_short = datetime.now().strftime('%Y%m%d')
 
+        # screenshot
+        screenshot_name = nip+'_'+timestamp_short+'.png'
+        mf.screenshot(screenshot_name)
 
-nip_list = []
-with open('nip_list.csv', 'rb') as csvfile:
-    reader = csv.reader(csvfile, delimiter=';', quotechar='|')
-    for row in reader:
-        nip_list.append(row[0])
+        # get message
+        message = mf.message()
 
+    # nip is nod valid
+    else:
+        message =  "niepoprawny format NIP"
 
+    if message:
+        if "czynny" in message:
+            status = "OK"
+        else:
+            status = "PROBLEM"
+    else:
+        status = "CHECK PROBLEM"
 
-with contextlib.closing(webdriver.PhantomJS()) as d:
-    d.implicitly_wait(10)
+    # fill result dictionary
+    nip_dict[nip]["message"] = message
+    nip_dict[nip]["timestamp"] = timestamp
+    nip_dict[nip]["status"] = status
 
-    with open('nip_result.csv', 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(["LP", "NIP", "STATUS", "OPIS", "CZAS SPRAWDZENIA"])
+# create csv
+with open(nip_csv_out, 'wb') as csvfile:
+    writer = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(["NIP", "STATUS", "OPIS", "CZAS SPRAWDZENIA"])
+    for nip, data in nip_dict.iteritems():
+        writer.writerow([nip, data["status"], data["message"], data["timestamp"]])
 
-        lp = 1
-        for nip in nip_list:
-            print "Podmiot " + nip + ":"
-            d.get("http://www.finanse.mf.gov.pl/web/wp/pp/sprawdzanie-statusu-podmiotu-w-vat")
-
-            # fill form
-            input = d.find_element_by_id('b-7')
-            input.send_keys("", nip)
-
-            # click & wait
-            d.find_element_by_id('b-8').click()
-            time.sleep(4)
-
-            # get timestamp
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            timestamp_short = datetime.now().strftime('%Y%m%d')
-
-            # screenshot
-            screenshot_name = nip+'_'+timestamp_short+'.png'
-            d.save_screenshot(screenshot_name)
-
-            # validate nip & read result if ok
-            if validateNIP(nip):
-                result = d.find_element_by_id('caption2_b-3').text.splitlines()[0].split("NIP ")[1]
-            else:
-                result = "niepoprawny format NIP"
-
-            if "czynny" in result:
-                status = "OK"
-            else:
-                status = "PROBLEM"
-
-            print result
-            writer.writerow([lp, nip, status, result, timestamp])
-            lp = lp + 1
+mf.exit()
