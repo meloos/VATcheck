@@ -4,24 +4,16 @@ from Validator import Validator
 from datetime import datetime
 import csv
 
-# initialize webdriver and validator
-mf = MFDriver()
-v = Validator()
-
 nip_dict = {}
 
 nip_csv_in = "nip_list.csv"
 nip_csv_out = "nip_result.csv"
 
-# get nips from csv into dictionary
-with open(nip_csv_in, 'rb') as csvfile:
-     reader = csv.reader(csvfile, delimiter=';', quotechar='|')
-     for row in reader:
-         nip_dict[row[0]] = {}
+def check_nip(nip):
+    # initialize webdriver and validator
+    mf = MFDriver()
+    v = Validator()
 
-# check nips
-for nip, data in nip_dict.iteritems():
-    print nip
 
     # if nip is valid
     if v.validate(nip):
@@ -56,6 +48,21 @@ for nip, data in nip_dict.iteritems():
     nip_dict[nip]["timestamp"] = timestamp
     nip_dict[nip]["status"] = status
 
+    # close webdriver
+    mf.exit()
+
+
+# get nips from csv into dictionary
+with open(nip_csv_in, 'rb') as csvfile:
+     reader = csv.reader(csvfile, delimiter=';', quotechar='|')
+     for row in reader:
+         nip_dict[row[0]] = {}
+
+# check nips
+for nip, data in nip_dict.iteritems():
+    print nip
+    check_nip(nip)
+
 # create csv
 with open(nip_csv_out, 'wb') as csvfile:
     writer = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -63,4 +70,3 @@ with open(nip_csv_out, 'wb') as csvfile:
     for nip, data in nip_dict.iteritems():
         writer.writerow([nip, data["status"], data["message"], data["timestamp"]])
 
-mf.exit()
