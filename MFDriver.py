@@ -12,7 +12,7 @@ class MFDriver():
 
         # init driver
         if "HTTP_PROXY" in os.environ:
-            self.driver = webdriver.PhantomJS(service_args= ["--proxy="+os.environ['HTTP_PROXY'], 'proxy-type=http')
+            self.driver = webdriver.PhantomJS(service_args= ["--proxy="+os.environ['HTTP_PROXY'], '--proxy-type=http'])
         else:
             self.driver = webdriver.PhantomJS()
         self.driver.set_window_size(1027, 768)
