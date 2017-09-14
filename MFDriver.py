@@ -1,4 +1,5 @@
 from selenium import webdriver
+import os
 import time
 
 class MFDriver():
@@ -10,7 +11,10 @@ class MFDriver():
         self.message_id = "caption2_b-3"
 
         # init driver
-        self.driver = webdriver.PhantomJS()
+        if "HTTP_PROXY" in os.environ:
+            self.driver = webdriver.PhantomJS(service_args= ["--proxy="+os.environ['HTTP_PROXY'], 'proxy-type=http')
+        else:
+            self.driver = webdriver.PhantomJS()
         self.driver.set_window_size(1027, 768)
         self.driver.implicitly_wait(10)
 
