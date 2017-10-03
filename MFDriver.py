@@ -11,8 +11,8 @@ class MFDriver():
         self.message_id = "caption2_b-3"
 
         # init driver
-        if "HTTP_PROXY" in os.environ:
-            self.driver = webdriver.PhantomJS(service_args= ["--proxy="+os.environ['HTTP_PROXY'], '--proxy-type=http'])
+        if "http_proxy" in os.environ:
+            self.driver = webdriver.PhantomJS(service_args= ["--proxy="+os.environ['http_proxy'], '--proxy-type=http'])
         else:
             self.driver = webdriver.PhantomJS()
         self.driver.set_window_size(1027, 768)
